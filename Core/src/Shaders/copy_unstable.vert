@@ -95,8 +95,9 @@ void main()
                    if(colorTime.w == time &&
                       vertConf.w > confThreshold && 
                       vertConf.z > localPos.z && 
-                      vertConf.z - localPos.z > 0.01 &&
-                      abs(localNorm.z) > 0.85f)
+                      vertConf.z - localPos.z > 0.01 //&&
+//                      abs(localNorm.z) > 0.85f
+                      )
                    {
                        zCount++;
                    }
