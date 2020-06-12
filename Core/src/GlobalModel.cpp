@@ -42,6 +42,9 @@ GlobalModel::GlobalModel()
 {
     vbos = new std::pair<GLuint, GLuint>[2];
 
+    isFirstFrame = true;
+	downloadFromBuffer1 = true;
+    
     float * vertices = new float[bufferSize];
 
     memset(&vertices[0], 0, bufferSize);
@@ -597,37 +600,85 @@ void GlobalModel::clean(const Eigen::Matrix4f & pose,
     TOCK("Fuse::Copy");
 }
 
-unsigned int GlobalModel::lastCount()
-{
-    return count;
+unsigned int GlobalModel::lastCount() {
+	return sizeLastFrame;
+	//return count;
 }
 
-Eigen::Vector4f * GlobalModel::downloadMap()
-{
-    glFinish();
-
-    Eigen::Vector4f * vertices = new Eigen::Vector4f[count * 3];
-
-    memset(&vertices[0], 0, count * Vertex::SIZE);
-
-    GLuint downloadVbo;
-
-    glGenBuffers(1, &downloadVbo);
-    glBindBuffer(GL_ARRAY_BUFFER, downloadVbo);
-    glBufferData(GL_ARRAY_BUFFER, bufferSize, 0, GL_STREAM_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    glBindBuffer(GL_COPY_READ_BUFFER, vbos[renderSource].first);
-    glBindBuffer(GL_COPY_WRITE_BUFFER, downloadVbo);
-
-    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, count * Vertex::SIZE);
-    glGetBufferSubData(GL_COPY_WRITE_BUFFER, 0, count * Vertex::SIZE, vertices);
-
-    glBindBuffer(GL_COPY_READ_BUFFER, 0);
-    glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-    glDeleteBuffers(1, &downloadVbo);
-
-    glFinish();
-
-    return vertices;
+Eigen::Vector4f* GlobalModel::downloadData() {
+	Eigen::Vector4f *vertices = new Eigen::Vector4f[sizeLastFrame * 3];
+	memset(&vertices[0], 0, sizeLastFrame * Vertex::SIZE);
+	glGetBufferSubData(GL_COPY_WRITE_BUFFER, 0, sizeLastFrame * Vertex::SIZE,
+			vertices);
+	return vertices;
 }
+
+void GlobalModel::copyDataTo(GLuint &buffer) {
+	glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, bufferSize, 0, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glBindBuffer(GL_COPY_READ_BUFFER, vbos[renderSource].first);
+	glBindBuffer(GL_COPY_WRITE_BUFFER, buffer);
+
+	//copy data to ReadDownloadBuffer1
+	glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0,
+			count * Vertex::SIZE);
+	glBindBuffer(GL_COPY_READ_BUFFER, 0);
+}
+
+Eigen::Vector4f* GlobalModel::downloadMap() {
+
+	//first frame? only fill one buffer and return empty surfel map
+	glFinish();
+	if (isFirstFrame) {
+		isFirstFrame = false;
+		glGenBuffers(1, &ReadDownloadBuffer1);
+		glGenBuffers(1, &ReadDownloadBuffer2);
+
+		//DownloadBuffer1 füllen
+		copyDataTo(ReadDownloadBuffer1);
+
+		Eigen::Vector4f *vertices = new Eigen::Vector4f[0];
+		memset(&vertices[0], 0, 0 * Vertex::SIZE);
+
+		sizeLastFrame = count;
+		return vertices;
+	} else // normal procedure after first frame
+	{
+
+		// download data from ReadDownloadBuffer1
+		// copy data from vbo to ReadDownloadBuffer2
+		if (downloadFromBuffer1) {
+			downloadFromBuffer1 = false;
+
+			//download to memory
+			Eigen::Vector4f *vertices = downloadData();
+
+			//prepare other buffer for next frame
+			copyDataTo(ReadDownloadBuffer2);
+
+			sizeLastFrame = count;
+			return vertices;
+		}
+
+		// download data from ReadDownloadBuffer2
+		// copy data from vbo to ReadDownloadBuffer1
+		else {
+			downloadFromBuffer1 = true;
+
+			//download to memory
+			Eigen::Vector4f *vertices = downloadData();
+
+			//prepare other buffer for next frame
+			copyDataTo(ReadDownloadBuffer1);
+
+			sizeLastFrame = count;
+			return vertices;
+
+		}
+	}
+
+}
+

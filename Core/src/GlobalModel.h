@@ -88,10 +88,21 @@ class GlobalModel
         EFUSION_API unsigned int lastCount();
 
         Eigen::Vector4f * downloadMap();
-
+        
+        Eigen::Vector4f * downloadData();
+        
+        void copyDataTo(GLuint& buffer);
+        
     private:
         //First is the vbo, second is the fid
         std::pair<GLuint, GLuint> * vbos;
+
+        GLuint ReadDownloadBuffer1;
+        GLuint ReadDownloadBuffer2;
+        bool isFirstFrame;
+        bool downloadFromBuffer1;
+        int sizeLastFrame;
+        
         int target, renderSource;
 
         const int bufferSize;
