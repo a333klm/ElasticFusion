@@ -2,16 +2,16 @@
  * This file is part of ElasticFusion.
  *
  * Copyright (C) 2015 Imperial College London
- * 
- * The use of the code within this file and all code within files that 
- * make up the software that is ElasticFusion is permitted for 
- * non-commercial purposes only.  The full terms and conditions that 
- * apply to the code within this file are detailed within the LICENSE.txt 
- * file and at <http://www.imperial.ac.uk/dyson-robotics-lab/downloads/elastic-fusion/elastic-fusion-license/> 
- * unless explicitly stated.  By downloading this file you agree to 
+ *
+ * The use of the code within this file and all code within files that
+ * make up the software that is ElasticFusion is permitted for
+ * non-commercial purposes only.  The full terms and conditions that
+ * apply to the code within this file are detailed within the LICENSE.txt
+ * file and at <http://www.imperial.ac.uk/dyson-robotics-lab/downloads/elastic-fusion/elastic-fusion-license/>
+ * unless explicitly stated.  By downloading this file you agree to
  * comply with these terms.
  *
- * If you wish to use any of this code for commercial purposes then 
+ * If you wish to use any of this code for commercial purposes then
  * please email researchcontracts.engineering@imperial.ac.uk.
  *
  * Software License Agreement (BSD License)
@@ -103,7 +103,7 @@ void pyrDown(const DeviceArray2D<unsigned short> & src, DeviceArray2D<unsigned s
     const float sigma_color = 30;
 
     pyrDownGaussKernel<<<grid, block>>>(src, dst, sigma_color);
-    cudaSafeCall ( cudaGetLastError () );
+    cudaSafeCall ( cudaGetLastError (),__FILE__, __LINE__ );
 };
 
 __global__ void computeVmapKernel(const PtrStepSz<unsigned short> depth, PtrStep<float> vmap, float fx_inv, float fy_inv, float cx, float cy, float depthCutoff)
@@ -145,7 +145,7 @@ void createVMap(const CameraModel& intr, const DeviceArray2D<unsigned short> & d
     float fy = intr.fy, cy = intr.cy;
 
     computeVmapKernel<<<grid, block>>>(depth, vmap, 1.f / fx, 1.f / fy, cx, cy, depthCutoff);
-    cudaSafeCall (cudaGetLastError ());
+    cudaSafeCall (cudaGetLastError (),__FILE__, __LINE__);
 }
 
 __global__ void computeNmapKernel(int rows, int cols, const PtrStep<float> vmap, PtrStep<float> nmap)
@@ -200,7 +200,7 @@ void createNMap(const DeviceArray2D<float>& vmap, DeviceArray2D<float>& nmap)
     grid.y = getGridDim (rows, block.y);
 
     computeNmapKernel<<<grid, block>>>(rows, cols, vmap, nmap);
-    cudaSafeCall (cudaGetLastError ());
+    cudaSafeCall (cudaGetLastError (),__FILE__, __LINE__);
 }
 
 __global__ void tranformMapsKernel(int rows, int cols, const PtrStep<float> vmap_src, const PtrStep<float> nmap_src,
@@ -264,7 +264,7 @@ void tranformMaps(const DeviceArray2D<float>& vmap_src,
     grid.y = getGridDim(rows, block.y);
 
     tranformMapsKernel<<<grid, block>>>(rows, cols, vmap_src, nmap_src, Rmat, tvec, vmap_dst, nmap_dst);
-    cudaSafeCall(cudaGetLastError());
+    cudaSafeCall(cudaGetLastError(),__FILE__, __LINE__);
 }
 
 __global__ void copyMapsKernel(int rows, int cols, const float * vmap_src, const float * nmap_src,
@@ -326,7 +326,7 @@ void copyMaps(const DeviceArray<float>& vmap_src,
     grid.y = getGridDim(rows, block.y);
 
     copyMapsKernel<<<grid, block>>>(rows, cols, vmap_src, nmap_src, vmap_dst, nmap_dst);
-    cudaSafeCall(cudaGetLastError());
+    cudaSafeCall(cudaGetLastError(),__FILE__, __LINE__);
 }
 
 __global__ void pyrDownKernelGaussF(const PtrStepSz<float> src, PtrStepSz<float> dst, float * gaussKernel)
@@ -429,8 +429,8 @@ void resizeMap(const DeviceArray2D<float>& input, DeviceArray2D<float>& output)
     dim3 block (32, 8);
     dim3 grid (getGridDim (out_cols, block.x), getGridDim (out_rows, block.y));
     resizeMapKernel<normalize><< < grid, block>>>(out_rows, out_cols, in_rows, input, output);
-    cudaSafeCall ( cudaGetLastError () );
-    cudaSafeCall (cudaDeviceSynchronize ());
+    cudaSafeCall ( cudaGetLastError (),__FILE__, __LINE__ );
+    cudaSafeCall (cudaDeviceSynchronize (),__FILE__, __LINE__);
 }
 
 void resizeVMap(const DeviceArray2D<float>& input, DeviceArray2D<float>& output)
@@ -462,7 +462,7 @@ void pyrDownGaussF(const DeviceArray2D<float>& src, DeviceArray2D<float> & dst)
     cudaMemcpy(gauss_cuda, &gaussKernel[0], sizeof(float) * 25, cudaMemcpyHostToDevice);
 
     pyrDownKernelGaussF<<<grid, block>>>(src, dst, gauss_cuda);
-    cudaSafeCall ( cudaGetLastError () );
+    cudaSafeCall ( cudaGetLastError (),__FILE__, __LINE__ );
 
     cudaFree(gauss_cuda);
 };
@@ -518,7 +518,7 @@ void pyrDownUcharGauss(const DeviceArray2D<unsigned char>& src, DeviceArray2D<un
     cudaMemcpy(gauss_cuda, &gaussKernel[0], sizeof(float) * 25, cudaMemcpyHostToDevice);
 
     pyrDownKernelIntensityGauss<<<grid, block>>>(src, dst, gauss_cuda);
-    cudaSafeCall ( cudaGetLastError () );
+    cudaSafeCall ( cudaGetLastError (),__FILE__, __LINE__ );
 
     cudaFree(gauss_cuda);
 };
@@ -542,7 +542,7 @@ void verticesToDepth(DeviceArray<float>& vmap_src, DeviceArray2D<float> & dst, f
     dim3 grid (getGridDim (dst.cols (), block.x), getGridDim (dst.rows (), block.y));
 
     verticesToDepthKernel<<<grid, block>>>(vmap_src, dst, cutOff);
-    cudaSafeCall ( cudaGetLastError () );
+    cudaSafeCall ( cudaGetLastError (),__FILE__, __LINE__ );
 };
 
 texture<uchar4, 2, cudaReadModeElementType> inTex;
@@ -567,13 +567,13 @@ void imageBGRToIntensity(cudaArray * cuArr, DeviceArray2D<unsigned char> & dst)
     dim3 block (32, 8);
     dim3 grid (getGridDim (dst.cols (), block.x), getGridDim (dst.rows (), block.y));
 
-    cudaSafeCall(cudaBindTextureToArray(inTex, cuArr));
+    cudaSafeCall(cudaBindTextureToArray(inTex, cuArr),__FILE__, __LINE__);
 
     bgr2IntensityKernel<<<grid, block>>>(dst);
 
-    cudaSafeCall(cudaGetLastError());
+    cudaSafeCall(cudaGetLastError(),__FILE__, __LINE__);
 
-    cudaSafeCall(cudaUnbindTexture(inTex));
+    cudaSafeCall(cudaUnbindTexture(inTex),__FILE__, __LINE__);
 };
 
 __constant__ float gsobel_x3x3[9];
@@ -622,8 +622,8 @@ void computeDerivativeImages(DeviceArray2D<unsigned char>& src, DeviceArray2D<sh
         cudaMemcpyToSymbol(gsobel_x3x3, gsx3x3, sizeof(float) * 9);
         cudaMemcpyToSymbol(gsobel_y3x3, gsy3x3, sizeof(float) * 9);
 
-        cudaSafeCall(cudaGetLastError());
-        cudaSafeCall(cudaDeviceSynchronize());
+        cudaSafeCall(cudaGetLastError(),__FILE__, __LINE__);
+        cudaSafeCall(cudaDeviceSynchronize(),__FILE__, __LINE__);
 
         once = true;
     }
@@ -633,8 +633,8 @@ void computeDerivativeImages(DeviceArray2D<unsigned char>& src, DeviceArray2D<sh
 
     applyKernel<<<grid, block>>>(src, dx, dy);
 
-    cudaSafeCall(cudaGetLastError());
-    cudaSafeCall(cudaDeviceSynchronize());
+    cudaSafeCall(cudaGetLastError(),__FILE__, __LINE__);
+    cudaSafeCall(cudaDeviceSynchronize(),__FILE__, __LINE__);
 }
 
 __global__ void projectPointsKernel(const PtrStepSz<float> depth,
@@ -668,6 +668,6 @@ void projectToPointCloud(const DeviceArray2D<float> & depth,
     CameraModel intrinsicsLevel = intrinsics(level);
 
     projectPointsKernel<<<grid, block>>>(depth, cloud, 1.0f / intrinsicsLevel.fx, 1.0f / intrinsicsLevel.fy, intrinsicsLevel.cx, intrinsicsLevel.cy);
-    cudaSafeCall ( cudaGetLastError () );
-    cudaSafeCall (cudaDeviceSynchronize ());
+    cudaSafeCall ( cudaGetLastError (),__FILE__, __LINE__ );
+    cudaSafeCall (cudaDeviceSynchronize (),__FILE__, __LINE__);
 }
