@@ -60,10 +60,9 @@ class GPUConfig
            so3StepBlocks(64)
         {
             cudaDeviceProp prop;
-            std::cout << "gpuconfig"<<std::endl;
 
             cudaSafeCall(cudaGetDeviceProperties(&prop, 0),__FILE__, __LINE__);
-            std::cout << "gpuconfig"<<std::endl;
+
             std::string dev(prop.name);
 
             icpStepMap["GeForce GTX 780 Ti"] = std::pair<int, int>(128, 112);
