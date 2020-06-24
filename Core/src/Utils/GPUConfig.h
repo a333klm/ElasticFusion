@@ -129,7 +129,11 @@ class GPUConfig
             rgbStepMap["GeForce GTX 1080 Ti"] = std::pair<int, int>(144, 80);
             rgbResMap["GeForce GTX 1080 Ti"] = std::pair<int, int>(368, 112);
             so3StepMap["GeForce GTX 1080 Ti"] = std::pair<int, int>(128, 112);
-
+               
+            icpStepMap["GeForce GTX 1050"] = std::pair<int, int>(256, 80);
+            rgbStepMap["GeForce GTX 1050"] = std::pair<int, int>(288, 16);
+            rgbResMap["GeForce GTX 1050"] = std::pair<int, int>(128, 224);
+            so3StepMap["GeForce GTX 1050"] = std::pair<int, int>(128, 48);
 
 
             if(icpStepMap.find(dev) == icpStepMap.end())
