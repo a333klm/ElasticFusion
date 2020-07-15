@@ -18,8 +18,6 @@
 
 #version 330 core
 
-#include "color.glsl"
-
 layout (location = 0) in vec4 vPos;
 layout (location = 1) in vec4 vCol;
 layout (location = 2) in vec4 vNormR;
@@ -128,14 +126,6 @@ void main()
     if(vColor.w > 0 && time - vColor.w > timeDelta)
     {
         test = 1;
-    }
-    
-    //show removed surfels in red
-    if(zCount > 4)
-    {
-    	test = 1;
-    	vColor.w = time;
-    	vColor.x = encodeColor(vec3(0,255,0));
     }
     
     //This is probably really slow
